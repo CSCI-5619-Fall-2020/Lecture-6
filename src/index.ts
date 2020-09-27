@@ -5,16 +5,11 @@
 
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { Scene } from "@babylonjs/core/scene";
-import { Vector3, Color3 } from "@babylonjs/core/Maths/math";
+import { Vector3, Color3, Color4 } from "@babylonjs/core/Maths/math";
 import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight" 
 import { AssetsManager } from "@babylonjs/core/Misc/assetsManager"
-
-
-// Required for mesh creation methods
-// import {MeshBuilder} from  "@babylonjs/core/Meshes/meshBuilder";
-// import "@babylonjs/core/Materials/standardMaterial"
 
 // Side effects
 import "@babylonjs/loaders/glTF/2.0/glTFLoader"
@@ -66,44 +61,67 @@ class Game
     private async createScene() 
     {
         // This creates and positions a first-person camera (non-mesh)
-        var camera = new UniversalCamera("camera1", new Vector3(0, 1.7, 0), this.scene);
-
-        // This targets the camera to scene origin
-        camera.setTarget(new Vector3(0, 1.7, -1));
+        var camera = new UniversalCamera("camera1", new Vector3(0, 1.6, 0), this.scene);
+        camera.fov = 90 * Math.PI / 180;
 
         // This attaches the camera to the canvas
         camera.attachControl(this.canvas, true);
 
         // Some ambient light to illuminate the scene
-        var ambientlight = new HemisphericLight("ambient", new Vector3(0, 1, 0), this.scene);
+        var ambientlight = new HemisphericLight("ambient", Vector3.Up(), this.scene);
         ambientlight.intensity = 1.0;
-        ambientlight.diffuse = new Color3(.25, .25, .25);
+        //ambientlight.diffuse = new Color3(1, 1, .25);
 
         // Add a directional light to imitate sunlight
-        var directionalLight = new DirectionalLight("sunlight", new Vector3(0, -1, 0), this.scene);
+        var directionalLight = new DirectionalLight("sunlight", Vector3.Down(), this.scene);
         directionalLight.intensity = 1.0;
 
-        /*
+        // Creates a default skybox
+        const environment = this.scene.createDefaultEnvironment({
+            createGround: false,
+            skyboxSize: 120,
+            skyboxColor: new Color3(.059, .663, .80)
+        });
+    
+        const xrHelper = await this.scene.createDefaultXRExperienceAsync({});
+
+        xrHelper.teleportation.backwardsMovementEnabled = true;
+        xrHelper.teleportation.rotationEnabled = true;
+        xrHelper.teleportation.rotationAngle = 0;
+        
         // The assets manager can be used to load multiple assets
         var assetsManager = new AssetsManager(this.scene);
 
         // Create a task for each asset you want to load
-        var worldTask = assetsManager.addMeshTask("world task", "", "assets/models/", "world.glb");
-        worldTask.onSuccess = (task) => {
-            task.loadedMeshes[0].name = "world";
-            task.loadedMeshes[0].position = new Vector3(-75, -22, -50);
+        var forestTask = assetsManager.addMeshTask("forest task", "", "assets/models/", "forest.glb");
+        forestTask.onSuccess = (task) => {
+            forestTask.loadedMeshes[0].name = "Forest";
+            forestTask.loadedMeshes[0].rotation = Vector3.Zero();      
+        }
+
+        var swordTask = assetsManager.addMeshTask("sword task", "", "assets/models/", "master-sword.glb");
+        swordTask.onSuccess = (task) => {
+            swordTask.loadedMeshes[0].name = "Master Sword";
         }
 
         // This loads all the assets and displays a loading screen
         assetsManager.load();
-        */
 
-        const environment = this.scene.createDefaultEnvironment();
-
-        const xrHelper = await this.scene.createDefaultXRExperienceAsync({ floorMeshes: [environment!.ground!]});
-
-        // Show the debug layer
-        //scene.debugLayer.show();
+        // This will execute when all assets are loaded
+        assetsManager.onFinish = (tasks) => {
+            forestTask.loadedMeshes.forEach((mesh) => {
+                if(mesh.name.startsWith("Ground")) {
+                    xrHelper.teleportation.addFloorMesh(mesh);
+                }
+                else if(mesh.name == "Rock_02") {
+                    swordTask.loadedMeshes[0].setParent(mesh);
+                    swordTask.loadedMeshes[0].position = new Vector3(0.04, 0.04, -0.01);
+                }   
+            });
+            
+            // Show the debug layer
+            this.scene.debugLayer.show();
+        };    
     }
 }
 /******* End of the Game class ******/   
