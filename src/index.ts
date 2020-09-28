@@ -10,6 +10,7 @@ import { UniversalCamera } from "@babylonjs/core/Cameras/universalCamera";
 import { HemisphericLight } from "@babylonjs/core/Lights/hemisphericLight";
 import { DirectionalLight } from "@babylonjs/core/Lights/directionalLight" 
 import { AssetsManager } from "@babylonjs/core/Misc/assetsManager"
+import { PointerEventTypes, PointerInfo } from "@babylonjs/core/Events/pointerEvents";
 
 // Side effects
 import "@babylonjs/loaders/glTF/2.0/glTFLoader"
@@ -17,6 +18,7 @@ import "@babylonjs/core/Helpers/sceneHelpers";
 
 // Import debug layer
 import "@babylonjs/inspector"
+
 
 // Note: The structure has changed since previous assignments because we need to handle the 
 // async methods used for setting up XR. In particular, "createDefaultXRExperienceAsync" 
@@ -46,6 +48,7 @@ class Game
     {
         // Create the scene and then execute this function afterwards
         this.createScene().then(() => {
+
             // Register a render loop to repeatedly render the scene
             this.engine.runRenderLoop(() => { 
                 this.scene.render();
@@ -70,7 +73,7 @@ class Game
         // Some ambient light to illuminate the scene
         var ambientlight = new HemisphericLight("ambient", Vector3.Up(), this.scene);
         ambientlight.intensity = 1.0;
-        //ambientlight.diffuse = new Color3(1, 1, .25);
+        ambientlight.diffuse = new Color3(.25, .25, .25);
 
         // Add a directional light to imitate sunlight
         var directionalLight = new DirectionalLight("sunlight", Vector3.Down(), this.scene);
@@ -79,49 +82,61 @@ class Game
         // Creates a default skybox
         const environment = this.scene.createDefaultEnvironment({
             createGround: false,
-            skyboxSize: 120,
+            skyboxSize: 750,
             skyboxColor: new Color3(.059, .663, .80)
         });
-    
+
+        // Creates the XR experience helper
         const xrHelper = await this.scene.createDefaultXRExperienceAsync({});
 
-        xrHelper.teleportation.backwardsMovementEnabled = true;
-        xrHelper.teleportation.rotationEnabled = true;
-        xrHelper.teleportation.rotationAngle = 0;
+        // There is a bug in Babylon 4.1 that fails to reenable pointer selection after a teleport
+        // This is a hacky workaround that disables a different unused feature instead
+        xrHelper.teleportation.setSelectionFeature(xrHelper.baseExperience.featuresManager.getEnabledFeature("xr-background-remover"));
+
+        // Register event handler for selection events (pulling the trigger, clicking the mouse button)
+        this.scene.onPointerObservable.add((pointerInfo) => {
+            this.processPointer(pointerInfo);
+        });
         
         // The assets manager can be used to load multiple assets
         var assetsManager = new AssetsManager(this.scene);
 
         // Create a task for each asset you want to load
-        var forestTask = assetsManager.addMeshTask("forest task", "", "assets/models/", "forest.glb");
-        forestTask.onSuccess = (task) => {
-            forestTask.loadedMeshes[0].name = "Forest";
-            forestTask.loadedMeshes[0].rotation = Vector3.Zero();      
+        var worldTask = assetsManager.addMeshTask("world task", "", "assets/models/", "world.glb");
+        worldTask.onSuccess = (task) => {
+            worldTask.loadedMeshes[0].name = "world";
+            worldTask.loadedMeshes[0].position = new Vector3(0, 0.5, 0);
         }
-
-        var swordTask = assetsManager.addMeshTask("sword task", "", "assets/models/", "master-sword.glb");
-        swordTask.onSuccess = (task) => {
-            swordTask.loadedMeshes[0].name = "Master Sword";
-        }
-
+        
         // This loads all the assets and displays a loading screen
         assetsManager.load();
 
         // This will execute when all assets are loaded
         assetsManager.onFinish = (tasks) => {
-            forestTask.loadedMeshes.forEach((mesh) => {
-                if(mesh.name.startsWith("Ground")) {
+
+            // Add the floor meshes to the teleporter
+            worldTask.loadedMeshes.forEach((mesh) => {
+                if(mesh.name.startsWith("rpgpp_lt_terrain")) {
                     xrHelper.teleportation.addFloorMesh(mesh);
                 }
-                else if(mesh.name == "Rock_02") {
-                    swordTask.loadedMeshes[0].setParent(mesh);
-                    swordTask.loadedMeshes[0].position = new Vector3(0.04, 0.04, -0.01);
-                }   
             });
             
             // Show the debug layer
             this.scene.debugLayer.show();
-        };    
+        };  
+    
+    }
+
+    // Event handler for processing pointer events
+    private processPointer(pointerInfo: PointerInfo)
+    {
+        switch (pointerInfo.type) {
+            case PointerEventTypes.POINTERDOWN:
+                if (pointerInfo.pickInfo?.hit) {
+                    console.log(pointerInfo.pickInfo.pickedMesh?.name + " " + pointerInfo.pickInfo.pickedPoint);
+                }
+                break;
+        }
     }
 }
 /******* End of the Game class ******/   
