@@ -2,17 +2,18 @@
 
 ## Topics
 
-1. WebXR in Babylon
-2. WebXR emulator
-3. Running on the Quest
+1. A new object-oriented program structure
+2. Using the AssetsManager
+3. Initializing a WebXR experience
+4. Development using the WebXR emulator
+5. Running the dev environment on the Quest
    - Modifying the webpack configuration
-   - Firewall issues
-4. Teleportation and ground
-5. Controller input
+6. Teleportation and ground meshes
+7. Handling selection events
 
 ## Participation Exercise
 
-To be added.
+There is no participation exercise today because of the quiz.  Confirm you watched the lecture video on Canvas to get the points for today's lecture.
 
 ## License
 
@@ -23,3 +24,5 @@ The intent of choosing CC BY-NC-SA 4.0 is to allow individuals and instructors a
 ## Acknowledgments
 
 This lecture was based upon content from the [3D User Interfaces Fall 2020](https://github.blairmacintyre.me/3dui-class-f20) course by Blair MacIntyre.
+
+The virtual environment was created using [RPG Poly Pack - Lite](https://assetstore.unity.com/packages/3d/environments/landscapes/rpg-poly-pack-lite-148410) from the Unity Asset Store.
