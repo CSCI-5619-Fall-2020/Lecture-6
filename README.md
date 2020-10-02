@@ -1,5 +1,7 @@
 # Lecture 6: Introduction to WebXR
 
+Detailed explanation of this code can be found in the lecture [video](https://mediaspace.umn.edu/media/1_knf1h7qv).
+
 ## Topics
 
 1. A new object-oriented program structure
